@@ -57,3 +57,4 @@ skyblock_item{item_id="ENCHANTED_DIAMOND", type="sellPrice"}
 ## License
 This project is licensed under the MIT License.
 
+![dashboard](dashboard.png)
