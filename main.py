@@ -13,7 +13,7 @@ def get_json(url: str, web_client: requests.Session) -> dict | None:
 
 
 def get_item_and_price(response: dict) -> list | None:
-    if response["success"]:
+    if response and response.get("success"):
         products = []
         response = response["products"]
         for item_name in response:
@@ -32,39 +32,32 @@ def get_item_and_price(response: dict) -> list | None:
                 }
             )
         return products
-    else:
-        return None
+    return None
 
 
-def webserver(port=9015, data=None):
-    if data is None:
-        data = []
+async def metrics_handler(request):
+    web_client = requests.Session()
+    prices = get_json(SKYBLOCK_BAZAAR_API_URL, web_client)
+    items = get_item_and_price(prices)
 
-    async def metrics_handler(request):
-        metrics = []
-        for item in data:
-            item_id = item["item_id"]
-            for key, value in item.items():
-                if key != "item_id":
-                    metrics.append(
-                        f'skyblock_item{{item_id="{item_id}", type="{key}"}} {value}'
-                    )
-        return web.Response(text="\n".join(metrics).strip(), content_type="text/plain")
+    if not items:
+        return web.Response(text="Failed to fetch data", status=500)
 
+    metrics = []
+    for item in items:
+        item_id = item["item_id"]
+        for key, value in item.items():
+            if key != "item_id":
+                metrics.append(f'skyblock_item{{item_id="{item_id}", type="{key}"}} {value}')
+
+    return web.Response(text="\n".join(metrics).strip(), content_type="text/plain")
+
+
+def webserver(port=9015):
     app = web.Application()
     app.router.add_get("/metrics", metrics_handler)
-
     web.run_app(app, port=port)
 
 
-def main():
-    web_client = requests.Session()
-    prices = get_json(SKYBLOCK_BAZAAR_API_URL, web_client)
-    if prices:
-        items = get_item_and_price(prices)
-        if items:
-            webserver(data=items)
-
-
 if __name__ == "__main__":
-    main()
+    webserver()
