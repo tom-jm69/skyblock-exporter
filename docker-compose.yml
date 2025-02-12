@@ -1,0 +1,13 @@
+services:
+  skyblock-prometheus-exporter:
+    build: .
+    container_name: skyblock-prometheus-exporter
+    restart: unless-stopped
+    ports:
+      - 9015:9015
+    healthcheck:
+      test: ["CMD", "curl", "127.0.0.1:9015"]
+      interval: 15s
+      timeout: 5s
+      retries: 2
+      start_period: 30s
